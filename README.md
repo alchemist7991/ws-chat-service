@@ -6,8 +6,8 @@ go get "golang.org/x/net/websocket"
 go run main.go
 
 ### Send message to server
-- Open a new tab in chrome
-- Open devtools
+- Open multiple new tabs in chrome
+- Open devtools in all of those
 - Run the following script in console
 ```
 const socket = new WebSocket("ws://localhost:3000/new-socket-conn")

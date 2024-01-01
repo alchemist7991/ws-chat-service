@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 	"golang.org/x/net/websocket"
 )
 
@@ -13,7 +14,17 @@ type Server struct {
 
 func registerHandler(server *Server) {
 	http.Handle("/new-socket-conn", websocket.Handler(server.handleWS))
+	go http.Handle("/live-feed", websocket.Handler(server.liveFeed))
 	http.ListenAndServe(":3000", nil)
+}
+
+func (s *Server) liveFeed(ws *websocket.Conn) {
+	for {
+		// some continuous data
+		payload := fmt.Sprintf("%s", time.Now().UnixMicro())
+		ws.Write([]byte(payload))
+		time.Sleep(1 * time.Second)
+	}
 }
 
 func NewServer() *Server {
@@ -40,8 +51,19 @@ func (s *Server) readLoop(ws *websocket.Conn) {
 			continue
 		}
 		msg := buf[:n]
+		s.broadcast(msg)
 		fmt.Println(string(msg))
-		ws.Write([]byte("Received new message"))
+	}
+}
+
+func (s *Server) broadcast(msg []byte) {
+	for ws := range s.conns {
+		go func (ws *websocket.Conn) {
+			_, err := ws.Write(msg)
+			if err != nil {
+				fmt.Println("Error in writing message")
+			}
+		}(ws)
 	}
 }
 
